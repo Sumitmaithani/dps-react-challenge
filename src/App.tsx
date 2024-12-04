@@ -37,7 +37,7 @@ const App: React.FC = () => {
 	const [searchTerm, setSearchTerm] = useState(''); // to store the search term
 	const [selectedCity, setSelectedCity] = useState(''); // to store the selected city
 	const [highlightOldest, setHighlightOldest] = useState(false); // to store the highlight oldest per city option
-	const [debouncedSearchTerm] = useDebounce(searchTerm, 1000); // Add debounce
+	const [debouncedSearchTerm] = useDebounce(searchTerm, 1000); // Add debounce to the search term
 
 	useEffect(() => {
 		fetch('https://dummyjson.com/users')
@@ -59,18 +59,21 @@ const App: React.FC = () => {
 	};
 
 	useEffect(() => {
+		// Filter the users based on the search term
 		let filtered = users.filter(
 			(user) =>
 				user.firstName.toLowerCase().includes(debouncedSearchTerm) ||
 				user.lastName.toLowerCase().includes(debouncedSearchTerm)
 		);
 
+		// Filter the users based on the selected city
 		if (selectedCity) {
 			filtered = filtered.filter(
 				(user) => user.address.city === selectedCity
 			);
 		}
 
+		// Highlight the oldest user per city
 		if (highlightOldest) {
 			// Find the oldest user for each city
 			const oldestPerCity = users.reduce(
