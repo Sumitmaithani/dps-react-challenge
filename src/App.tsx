@@ -32,6 +32,7 @@ interface User {
 	isOldest?: boolean;
 }
 
+// loading skeleton
 const Loading = () => {
 	return (
 		<div className="flex flex-col space-y-3 loading">
@@ -137,21 +138,21 @@ const App: React.FC = () => {
 	const cities = Array.from(new Set(users.map((user) => user.address.city)));
 
 	return (
-		<div className="container">
+		<div className="container mx-auto px-4">
 			<h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-white">
 				Digital Product School
 			</h1>
-			<div className="py-10 flex flex-row gap-10 justify-items-center content-center items-center">
+			<div className="py-10 flex flex-col lg:flex-row gap-10 justify-items-center content-center items-center">
 				<Input
 					type="text"
 					placeholder="Search by name"
 					value={searchTerm}
 					onChange={handleSearch}
-					className="bg-white py-6 w-[360px]"
+					className="bg-white py-6 w-full lg:w-[360px]"
 				/>
 
 				<Select onValueChange={setSelectedCity} value={selectedCity}>
-					<SelectTrigger className="w-[180px] bg-white py-6">
+					<SelectTrigger className="w-full lg:w-[180px] bg-white py-6">
 						<SelectValue placeholder="Select a city" />
 					</SelectTrigger>
 					<SelectContent>
@@ -185,7 +186,7 @@ const App: React.FC = () => {
 			{loading ? (
 				<Loading />
 			) : (
-				<Table className="bg-white table-container">
+				<Table className="bg-white table-container w-full">
 					<TableHeader>
 						<TableRow>
 							<TableHead className="px-4 py-4 font-bold text-black">
