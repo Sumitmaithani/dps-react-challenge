@@ -18,6 +18,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/components/ui/table';
+import { useDebounce } from 'use-debounce';
 
 interface User {
 	id: number;
@@ -31,13 +32,13 @@ interface User {
 }
 
 const App: React.FC = () => {
-	const [users, setUsers] = useState<User[]>([]); // initial state for users
-	const [filteredUsers, setFilteredUsers] = useState<User[]>([]); // initial state for filtered users
-	const [searchTerm, setSearchTerm] = useState(''); // initial state for search term
-	const [selectedCity, setSelectedCity] = useState(''); // initial state for selected city
-	const [highlightOldest, setHighlightOldest] = useState(false); // initial state for highlight oldest
+	const [users, setUsers] = useState<User[]>([]); // to store the users fetched from the API
+	const [filteredUsers, setFilteredUsers] = useState<User[]>([]); // to store the users after filtering
+	const [searchTerm, setSearchTerm] = useState(''); // to store the search term
+	const [selectedCity, setSelectedCity] = useState(''); // to store the selected city
+	const [highlightOldest, setHighlightOldest] = useState(false); // to store the highlight oldest per city option
+	const [debouncedSearchTerm] = useDebounce(searchTerm, 1000); // Add debounce
 
-	// fetching data from the API
 	useEffect(() => {
 		fetch('https://dummyjson.com/users')
 			.then((res) => res.json())
@@ -47,7 +48,6 @@ const App: React.FC = () => {
 			});
 	}, []);
 
-	// handling search functionality
 	const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setSearchTerm(event.target.value.toLowerCase());
 	};
@@ -58,48 +58,11 @@ const App: React.FC = () => {
 		setHighlightOldest(event.target.checked);
 	};
 
-	// useEffect(() => {
-	// 	let filtered = users.filter(
-	// 		(user) =>
-	// 			user.firstName.toLowerCase().includes(searchTerm) ||
-	// 			user.lastName.toLowerCase().includes(searchTerm)
-	// 	);
-
-	// 	if (selectedCity) {
-	// 		filtered = filtered.filter(
-	// 			(user) => user.address.city === selectedCity
-	// 		);
-	// 	}
-
-	// 	if (highlightOldest) {
-	// 		const oldestUsers: User[] = [];
-	// 		const cities = Array.from(
-	// 			new Set(filtered.map((user) => user.address.city))
-	// 		);
-
-	// 		cities.forEach((city) => {
-	// 			const usersInCity = filtered.filter(
-	// 				(user) => user.address.city === city
-	// 			);
-	// 			const oldestUser = usersInCity.reduce((oldest, user) =>
-	// 				new Date(user.birthDate) < new Date(oldest.birthDate)
-	// 					? user
-	// 					: oldest
-	// 			);
-	// 			oldestUsers.push(oldestUser);
-	// 		});
-
-	// 		filtered = oldestUsers;
-	// 	}
-
-	// 	setFilteredUsers(filtered);
-	// }, [searchTerm, selectedCity, highlightOldest, users]);
-
 	useEffect(() => {
 		let filtered = users.filter(
 			(user) =>
-				user.firstName.toLowerCase().includes(searchTerm) ||
-				user.lastName.toLowerCase().includes(searchTerm)
+				user.firstName.toLowerCase().includes(debouncedSearchTerm) ||
+				user.lastName.toLowerCase().includes(debouncedSearchTerm)
 		);
 
 		if (selectedCity) {
@@ -108,34 +71,32 @@ const App: React.FC = () => {
 			);
 		}
 
-		// Highlight oldest users without filtering
 		if (highlightOldest) {
-			const oldestUsers: User[] = [];
-			const cities = Array.from(
-				new Set(filtered.map((user) => user.address.city))
+			// Find the oldest user for each city
+			const oldestPerCity = users.reduce(
+				(acc: Record<string, User>, user) => {
+					const city = user.address.city;
+					if (
+						!acc[city] ||
+						new Date(user.birthDate) < new Date(acc[city].birthDate)
+					) {
+						acc[city] = user;
+					}
+					return acc;
+				},
+				{}
 			);
 
-			cities.forEach((city) => {
-				const usersInCity = filtered.filter(
-					(user) => user.address.city === city
-				);
-				const oldestUser = usersInCity.reduce((oldest, user) =>
-					new Date(user.birthDate) < new Date(oldest.birthDate)
-						? user
-						: oldest
-				);
-				oldestUsers.push(oldestUser);
-			});
-
-			// Mark users as highlighted if they are the oldest
-			filtered = users.map((user) => ({
+			filtered = filtered.map((user) => ({
 				...user,
-				isOldest: oldestUsers.includes(user),
+				isOldest: oldestPerCity[user.address.city]?.id === user.id,
 			}));
+		} else {
+			filtered = filtered.map((user) => ({ ...user, isOldest: false }));
 		}
 
 		setFilteredUsers(filtered);
-	}, [searchTerm, selectedCity, highlightOldest, users]);
+	}, [debouncedSearchTerm, selectedCity, highlightOldest, users]);
 
 	const cities = Array.from(new Set(users.map((user) => user.address.city)));
 
@@ -200,24 +161,36 @@ const App: React.FC = () => {
 					</TableRow>
 				</TableHeader>
 				<TableBody>
-					{filteredUsers.map((user) => (
-						<TableRow
-							key={user.id}
-							className={
-								highlightOldest && user.isOldest
-									? 'highlight-table-row cursor-pointer'
-									: 'cursor-pointer'
-							}
-						>
-							<TableCell className="font-medium px-4 py-4 ">
-								{`${user.firstName} ${user.lastName}`}
+					{filteredUsers.length > 0 ? (
+						filteredUsers.map((user) => (
+							<TableRow
+								key={user.id}
+								className={
+									highlightOldest && user.isOldest
+										? 'highlight-table-row cursor-pointer'
+										: 'cursor-pointer'
+								}
+							>
+								<TableCell className="font-medium px-4 py-4 ">
+									{`${user.firstName} ${user.lastName}`}
+								</TableCell>
+								<TableCell>{user.address.city}</TableCell>
+								<TableCell>
+									{new Date(
+										user.birthDate
+									).toLocaleDateString()}
+								</TableCell>
+							</TableRow>
+						))
+					) : (
+						<TableRow>
+							<TableCell className="font-medium px-4 py-4 "></TableCell>
+							<TableCell className="text-center py-4">
+								No users found
 							</TableCell>
-							<TableCell>{user.address.city}</TableCell>
-							<TableCell>
-								{new Date(user.birthDate).toLocaleDateString()}
-							</TableCell>
+							<TableCell></TableCell>
 						</TableRow>
-					))}
+					)}
 				</TableBody>
 			</Table>
 		</div>
