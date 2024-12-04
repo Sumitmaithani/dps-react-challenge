@@ -16,3 +16,12 @@
 .highlight-table-row{
 	background: #646cffaa;
 }
+
+.loading {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	background-color: #fff;
+	border-radius: 20px;
+}

@@ -19,6 +19,7 @@ import {
 	TableRow,
 } from '@/components/ui/table';
 import { useDebounce } from 'use-debounce';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface User {
 	id: number;
@@ -31,6 +32,33 @@ interface User {
 	isOldest?: boolean;
 }
 
+const Loading = () => {
+	return (
+		<div className="flex flex-col space-y-3 loading">
+			<Skeleton className="h-[60px] w-[2500px] rounded-xl" />
+			<div className="space-y-2">
+				<Skeleton className="h-10 w-[2500px]" />
+				<Skeleton className="h-10 w-[2500px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2500px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2500px]" />
+				<Skeleton className="h-10 w-[2500px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2500px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+				<Skeleton className="h-10 w-[2000px]" />
+			</div>
+		</div>
+	);
+};
+
 const App: React.FC = () => {
 	const [users, setUsers] = useState<User[]>([]); // to store the users fetched from the API
 	const [filteredUsers, setFilteredUsers] = useState<User[]>([]); // to store the users after filtering
@@ -38,13 +66,16 @@ const App: React.FC = () => {
 	const [selectedCity, setSelectedCity] = useState(''); // to store the selected city
 	const [highlightOldest, setHighlightOldest] = useState(false); // to store the highlight oldest per city option
 	const [debouncedSearchTerm] = useDebounce(searchTerm, 1000); // Add debounce to the search term
+	const [loading, setLoading] = useState(false); // to store the loading state
 
 	useEffect(() => {
+		setLoading(true);
 		fetch('https://dummyjson.com/users')
 			.then((res) => res.json())
 			.then((data) => {
 				setUsers(data.users);
 				setFilteredUsers(data.users);
+				setLoading(false);
 			});
 	}, []);
 
@@ -59,6 +90,7 @@ const App: React.FC = () => {
 	};
 
 	useEffect(() => {
+		setLoading(true);
 		// Filter the users based on the search term
 		let filtered = users.filter(
 			(user) =>
@@ -99,6 +131,7 @@ const App: React.FC = () => {
 		}
 
 		setFilteredUsers(filtered);
+		setLoading(false);
 	}, [debouncedSearchTerm, selectedCity, highlightOldest, users]);
 
 	const cities = Array.from(new Set(users.map((user) => user.address.city)));
@@ -149,53 +182,57 @@ const App: React.FC = () => {
 				</div>
 			</div>
 
-			<Table className="bg-white table-container">
-				<TableHeader>
-					<TableRow>
-						<TableHead className="px-4 py-4 font-bold text-black">
-							Name
-						</TableHead>
-						<TableHead className="px-4 py-4 font-bold text-black">
-							City
-						</TableHead>
-						<TableHead className="px-4 py-4 font-bold text-black">
-							Birthday
-						</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{filteredUsers.length > 0 ? (
-						filteredUsers.map((user) => (
-							<TableRow
-								key={user.id}
-								className={
-									highlightOldest && user.isOldest
-										? 'highlight-table-row cursor-pointer'
-										: 'cursor-pointer'
-								}
-							>
-								<TableCell className="font-medium px-4 py-4 ">
-									{`${user.firstName} ${user.lastName}`}
-								</TableCell>
-								<TableCell>{user.address.city}</TableCell>
-								<TableCell>
-									{new Date(
-										user.birthDate
-									).toLocaleDateString()}
-								</TableCell>
-							</TableRow>
-						))
-					) : (
+			{loading ? (
+				<Loading />
+			) : (
+				<Table className="bg-white table-container">
+					<TableHeader>
 						<TableRow>
-							<TableCell className="font-medium px-4 py-4 "></TableCell>
-							<TableCell className="text-center py-4">
-								No users found
-							</TableCell>
-							<TableCell></TableCell>
+							<TableHead className="px-4 py-4 font-bold text-black">
+								Name
+							</TableHead>
+							<TableHead className="px-4 py-4 font-bold text-black">
+								City
+							</TableHead>
+							<TableHead className="px-4 py-4 font-bold text-black">
+								Birthday
+							</TableHead>
 						</TableRow>
-					)}
-				</TableBody>
-			</Table>
+					</TableHeader>
+					<TableBody>
+						{filteredUsers.length > 0 ? (
+							filteredUsers.map((user) => (
+								<TableRow
+									key={user.id}
+									className={
+										highlightOldest && user.isOldest
+											? 'highlight-table-row cursor-pointer'
+											: 'cursor-pointer'
+									}
+								>
+									<TableCell className="font-medium px-4 py-4 ">
+										{`${user.firstName} ${user.lastName}`}
+									</TableCell>
+									<TableCell>{user.address.city}</TableCell>
+									<TableCell>
+										{new Date(
+											user.birthDate
+										).toLocaleDateString()}
+									</TableCell>
+								</TableRow>
+							))
+						) : (
+							<TableRow>
+								<TableCell className="font-medium px-4 py-4 "></TableCell>
+								<TableCell className="text-center py-4">
+									No users found
+								</TableCell>
+								<TableCell></TableCell>
+							</TableRow>
+						)}
+					</TableBody>
+				</Table>
+			)}
 		</div>
 	);
 };
